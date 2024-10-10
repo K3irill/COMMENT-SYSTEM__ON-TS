@@ -63,7 +63,15 @@
 	}
 	&__comment {
 		display: flex;
-		margin-top: 50px;
+		flex-direction: column;
+		margin-top: 20px;
+	}
+	&__wrapper-info {
+		display: flex;
+	}
+	&__comment--reply {
+		margin-left: 60px;
+		padding: 20px;
 	}
 	&__text {
 		text-align: left;
@@ -74,4 +82,39 @@
 	font-size: 18px;
 	font-weight: bold;
 	color: rgb(118, 109, 109);
+}
+.comment-activities {
+	display: flex;
+	& > button {
+		background-color: transparent;
+		text-decoration: underline;
+		border: none;
+		cursor: pointer;
+		margin-right: 20px;
+	}
+	&__count {
+		display: flex;
+		align-items: center;
+		& > p {
+			font-size: 18px;
+			padding: 0 5px;
+		}
+		& button {
+			width: 15px;
+			height: 15px;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			border: none;
+			border-radius: 50%;
+			font-size: 18px;
+			cursor: pointer;
+			&:first-child {
+				color: red;
+			}
+			&:last-child {
+				color: green;
+			}
+		}
+	}
 }
