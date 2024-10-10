@@ -8,7 +8,8 @@ export class CommentsContainer {
 	public commentsContent: HTMLDivElement
 	private commentInput: HTMLInputElement | null
 	private commentButton: HTMLInputElement | null
-
+	private arrayComments: string[]
+	private commentCountSpan: HTMLSpanElement | null
 	constructor() {
 		this.commentsContainer = document.createElement('div')
 		this.commentsContainer.classList.add('comments__container')
@@ -16,8 +17,12 @@ export class CommentsContainer {
 		this.commentsActivities = document.createElement('div')
 		this.commentsActivities.classList.add('comments__activities')
 
+		this.arrayComments = []
+
 		const activitiesHTML = `
-            <button class='--active'>Комментарии <span>(80)</span></button>
+            <button class='--active'>Комментарии <span id="comment-count">(${
+							this.arrayComments.length + 1
+						})</span ></button>
             <select name="filters" id="filters-select">
                 <option value="">Please choose an option</option>
                 <option value="popular">По количеству оценок</option>
@@ -28,6 +33,9 @@ export class CommentsContainer {
         `
 
 		this.commentsActivities.innerHTML = activitiesHTML
+
+		this.commentCountSpan =
+			this.commentsActivities.querySelector('#comment-count')
 
 		this.commentsFormContainer = document.createElement('div')
 		this.commentsFormContainer.classList.add('comments__form-container')
@@ -83,7 +91,7 @@ export class CommentsContainer {
 			event.preventDefault()
 			const commentValue = this.commentInput!.value.trim()
 			if (commentValue) {
-				this.createComment(commentValue, false)
+				this.createComment(commentValue, false, user)
 				this.commentInput!.value = ''
 			}
 		})
@@ -192,6 +200,10 @@ export class CommentsContainer {
 			this.commentsContent.prepend(commentElement)
 		}
 
+		this.arrayComments.push(commentText.textContent)
+		this.updateAmountOfComment()
+		console.log(this.arrayComments)
+
 		replyButton.addEventListener('click', () => {
 			let existingReplyForm = mainDiv.querySelector('#reply-form')
 
@@ -235,7 +247,11 @@ export class CommentsContainer {
 			}
 		})
 	}
-
+	public updateAmountOfComment(): void {
+		if (this.commentCountSpan) {
+			this.commentCountSpan.textContent = `(${this.arrayComments.length})`
+		}
+	}
 	public getElement(): HTMLDivElement {
 		return this.commentsContainer
 	}
