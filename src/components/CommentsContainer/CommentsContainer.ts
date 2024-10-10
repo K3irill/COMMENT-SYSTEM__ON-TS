@@ -1,6 +1,7 @@
 import { makeUserInfo } from '../../user/user'
 import './CommentsContainer.scss'
 
+const user = makeUserInfo()
 export class CommentsContainer {
 	public commentsContainer: HTMLDivElement
 	public commentsActivities: HTMLDivElement
@@ -8,8 +9,12 @@ export class CommentsContainer {
 	public commentsContent: HTMLDivElement
 	private commentInput: HTMLInputElement | null
 	private commentButton: HTMLInputElement | null
-	private arrayComments: string[]
+	private arrayComments: {
+		text: string
+		user: { userName: string; userImg: string }
+	}[]
 	private commentCountSpan: HTMLSpanElement | null
+
 	constructor() {
 		this.commentsContainer = document.createElement('div')
 		this.commentsContainer.classList.add('comments__container')
@@ -20,9 +25,7 @@ export class CommentsContainer {
 		this.arrayComments = []
 
 		const activitiesHTML = `
-            <button class='--active'>Комментарии <span id="comment-count">(${
-							this.arrayComments.length + 1
-						})</span ></button>
+            <button class='--active'>Комментарии <span id="comment-count">(${this.arrayComments.length})</span ></button>
             <select name="filters" id="filters-select">
                 <option value="">Please choose an option</option>
                 <option value="popular">По количеству оценок</option>
@@ -87,27 +90,24 @@ export class CommentsContainer {
 		this.commentsContainer.append(this.commentsFormContainer)
 		this.commentsContainer.append(this.commentsContent)
 
+		this.loadCommentsFromStorage()
+
 		form.addEventListener('submit', event => {
 			event.preventDefault()
 			const commentValue = this.commentInput!.value.trim()
 			if (commentValue) {
-				this.createComment(commentValue, false, user)
+				this.createComment(commentValue, user, false)
 				this.commentInput!.value = ''
+				this.saveCommentsToStorage()
 			}
 		})
-
-		this.createComment(
-			`Наверное, самая большая ошибка создателей сериала была в том, что они поставили уж слишком много надежд на поддержку фанатов вселенной. Как оказалось на деле, большинство 'фанатов' с самой настоящей яростью и желчью стали уничтожать сериал, при этом объективности в отзывах самый минимум.`,
-			false,
-			exampleUser
-		)
 	}
 
 	private createComment(
 		value: string,
+		userInfo: { userName: string; userImg: string },
 		isReply: boolean,
-		userInfo?: any,
-		parentComment?: HTMLDivElement,
+		parentComment?: HTMLDivElement | null,
 		repliedToUserName?: string
 	): void {
 		const commentWrapperInfo = document.createElement('div')
@@ -200,7 +200,7 @@ export class CommentsContainer {
 			this.commentsContent.prepend(commentElement)
 		}
 
-		this.arrayComments.push(commentText.textContent)
+		this.arrayComments.push({ text: value, user: userInfo })
 		this.updateAmountOfComment()
 		console.log(this.arrayComments)
 
@@ -236,8 +236,8 @@ export class CommentsContainer {
 						const repliedToUserName = userNameHeading.textContent
 						this.createComment(
 							replyValue,
-							true,
 							user,
+							true,
 							commentElement,
 							repliedToUserName!
 						) // Передаем имя
@@ -247,18 +247,47 @@ export class CommentsContainer {
 			}
 		})
 	}
-	public updateAmountOfComment(): void {
+	private saveCommentsToStorage(): void {
+		const commentsToSave = this.arrayComments.map(comment => ({
+			text: comment.text,
+			user: {
+				userName: comment.user.userName,
+				userImg: comment.user.userImg,
+			},
+		}))
+
+		localStorage.setItem('comments', JSON.stringify(commentsToSave))
+	}
+
+	private loadCommentsFromStorage(): void {
+		const savedComments = localStorage.getItem('comments')
+		if (savedComments) {
+			this.arrayComments = JSON.parse(savedComments)
+
+			this.arrayComments.forEach(({ text, user }) => {
+				if (user && user.userImg && user.userName) {
+					this.createComment(text, user, false) // Передаем правильные параметры
+				} else {
+					console.warn('Данные пользователя неполные для комментария:', text)
+				}
+			})
+		}
+
+		this.updateAmountOfComment()
+	}
+
+	private updateAmountOfComment(): void {
 		if (this.commentCountSpan) {
 			this.commentCountSpan.textContent = `(${this.arrayComments.length})`
 		}
 	}
+
 	public getElement(): HTMLDivElement {
 		return this.commentsContainer
 	}
 }
-const exampleUser: any = {
-	userName: 'Алексей_1994b',
-	userImg:
-		'https://avatars.dzeninfra.ru/get-zen-logos/246004/pub_5ebfd74dec0f7529ba5ece20_5ebfdc39b2e1b32bf1076ca4/xxh',
-}
-const user = makeUserInfo()
+// const exampleUser: any = {
+// 	userName: 'Алексей_1994b',
+// 	userImg:
+// 		'https://avatars.dzeninfra.ru/get-zen-logos/246004/pub_5ebfd74dec0f7529ba5ece20_5ebfdc39b2e1b32bf1076ca4/xxh',
+// }
