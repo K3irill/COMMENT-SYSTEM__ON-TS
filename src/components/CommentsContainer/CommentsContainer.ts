@@ -18,7 +18,9 @@ export class CommentsContainer {
 		rating?: number
 	}[]
 	private commentCountSpan: HTMLSpanElement | null
-
+	private commentMainButton: HTMLElement | null
+	private commentFavorite: HTMLElement | null
+	private commentsFavoriteContainer: HTMLDivElement | null
 	constructor() {
 		this.commentsContainer = document.createElement('div')
 		this.commentsContainer.classList.add('comments__container')
@@ -29,20 +31,26 @@ export class CommentsContainer {
 		this.arrayComments = []
 
 		const activitiesHTML = `
-            <button class='--active'>Комментарии <span id="comment-count">(${this.arrayComments.length})</span ></button>
+            <button  id="mainComments-btn">Комментарии <span id="comment-count">(${this.arrayComments.length})</span></button>
             <select name="filters" id="filters-select">
                 <option value="">Please choose an option</option>
                 <option value="popular">По количеству оценок</option>
                 <option value="new">Новые</option>
                 <option value="old">Старые</option>
             </select>
-            <button>Избранное <span></span></button>
+            <button id="favorite-btn">Избранное <span></span></button>
         `
-
+		//
 		this.commentsActivities.innerHTML = activitiesHTML
 
 		this.commentCountSpan =
 			this.commentsActivities.querySelector('#comment-count')
+		this.commentMainButton =
+			this.commentsActivities.querySelector('#mainComments-btn')
+		this.commentFavorite =
+			this.commentsActivities.querySelector('#favorite-btn')
+		this.commentMainButton?.classList.add('--active')
+		//
 
 		this.commentsFormContainer = document.createElement('div')
 		this.commentsFormContainer.classList.add('comments__form-container')
@@ -90,10 +98,40 @@ export class CommentsContainer {
 		this.commentsContent = document.createElement('div')
 		this.commentsContent.classList.add('comments__content')
 
+		this.commentsFavoriteContainer = document.createElement('div')
+		this.commentsFavoriteContainer.classList.add('comments__favorite', 'hidden')
+
+		if (this.commentsFavoriteContainer.innerHTML === '') {
+			this.commentsFavoriteContainer.innerHTML = `
+				<h3 style='margin-top: 30px'>У вас пока нет избранных комментариев</h3>
+			`
+		}
+
+		//
+		this.commentMainButton?.addEventListener('click', () => {
+			this.commentsContent.classList.toggle('hidden')
+			this.commentsFavoriteContainer?.classList.add('hidden')
+			this.commentMainButton?.classList.toggle('--active')
+
+			if (this.commentMainButton?.classList.contains('--active')) {
+				this.commentFavorite?.classList.remove('--active')
+			}
+		})
+
+		this.commentFavorite?.addEventListener('click', () => {
+			this.commentsContent.classList.add('hidden')
+			this.commentsFavoriteContainer?.classList.toggle('hidden')
+			this.commentFavorite?.classList.toggle('--active')
+
+			if (this.commentFavorite?.classList.contains('--active')) {
+				this.commentMainButton?.classList.remove('--active')
+			}
+		})
+		//
 		this.commentsContainer.append(this.commentsActivities)
 		this.commentsContainer.append(this.commentsFormContainer)
 		this.commentsContainer.append(this.commentsContent)
-
+		this.commentsContainer.append(this.commentsFavoriteContainer)
 		this.loadCommentsFromStorage()
 
 		form.addEventListener('submit', event => {
@@ -260,6 +298,16 @@ export class CommentsContainer {
 		console.log(this.arrayComments)
 		this.updateAmountOfComment()
 
+		favoriteButton.addEventListener('click', () => {
+			const favoriteCommentElement = commentElement.cloneNode(true)
+			this.commentsFavoriteContainer?.append(favoriteCommentElement)
+
+			const emptyMessage = this.commentsFavoriteContainer?.querySelector('h3')
+			if (emptyMessage) {
+				emptyMessage.remove()
+			}
+		})
+
 		replyButton.addEventListener('click', () => {
 			let existingReplyForm = mainDiv.querySelector('#reply-form')
 
@@ -304,6 +352,7 @@ export class CommentsContainer {
 			}
 		})
 	}
+
 	private updateVoteStatus(commentText: string, voteType: 'up' | 'down'): void {
 		let votes = localStorage.getItem('votes')
 		if (!votes) {
