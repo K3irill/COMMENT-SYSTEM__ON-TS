@@ -35,8 +35,8 @@ export class CommentsContainer {
 		const userDiv = document.createElement('div')
 		userDiv.classList.add('comments__user')
 		const userImage = document.createElement('img')
-		userImage.src = userInfo.userImg
-		userImage.alt = userInfo.userName
+		userImage.src = user.userImg
+		userImage.alt = user.userName
 		userDiv.append(userImage)
 
 		const mainDiv = document.createElement('div')
@@ -90,14 +90,17 @@ export class CommentsContainer {
 
 		this.createComment(
 			`Наверное, самая большая ошибка создателей сериала была в том, что они поставили уж слишком много надежд на поддержку фанатов вселенной. Как оказалось на деле, большинство 'фанатов' с самой настоящей яростью и желчью стали уничтожать сериал, при этом объективности в отзывах самый минимум.`,
-			false
+			false,
+			exampleUser
 		)
 	}
 
 	private createComment(
 		value: string,
 		isReply: boolean,
-		parentComment?: HTMLDivElement
+		userInfo?: any,
+		parentComment?: HTMLDivElement,
+		repliedToUserName?: string
 	): void {
 		const commentWrapperInfo = document.createElement('div')
 		commentWrapperInfo.classList.add('comments__wrapper-info')
@@ -121,12 +124,22 @@ export class CommentsContainer {
 		mainDiv.classList.add('comments__main')
 
 		const infoDiv = document.createElement('div')
-		infoDiv.classList.add('comments__info')
-
+		if (isReply) {
+			infoDiv.classList.add('comments__info-reply')
+		} else {
+			infoDiv.classList.add('comments__info')
+		}
 		const userNameHeading = document.createElement('h2')
 		userNameHeading.textContent = userInfo.userName
 
 		infoDiv.append(userNameHeading)
+
+		if (isReply && repliedToUserName) {
+			const replyByUserName = document.createElement('p')
+			replyByUserName.style.marginLeft = '10px'
+			replyByUserName.textContent = `to ${repliedToUserName}`
+			infoDiv.append(replyByUserName)
+		}
 
 		const commentText = document.createElement('p')
 		commentText.classList.add('comments__text')
@@ -208,7 +221,14 @@ export class CommentsContainer {
 					event.preventDefault()
 					const replyValue = replyInput.value.trim()
 					if (replyValue) {
-						this.createComment(replyValue, true, commentElement)
+						const repliedToUserName = userNameHeading.textContent
+						this.createComment(
+							replyValue,
+							true,
+							user,
+							commentElement,
+							repliedToUserName!
+						) // Передаем имя
 						replyInput.value = ''
 					}
 				})
@@ -220,5 +240,9 @@ export class CommentsContainer {
 		return this.commentsContainer
 	}
 }
-
-const userInfo = makeUserInfo()
+const exampleUser: any = {
+	userName: 'Алексей_1994b',
+	userImg:
+		'https://avatars.dzeninfra.ru/get-zen-logos/246004/pub_5ebfd74dec0f7529ba5ece20_5ebfdc39b2e1b32bf1076ca4/xxh',
+}
+const user = makeUserInfo()

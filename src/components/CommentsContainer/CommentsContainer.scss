@@ -54,6 +54,11 @@
 		display: flex;
 		justify-content: space-between;
 	}
+	&__info-reply {
+		display: flex;
+		justify-content: start;
+		align-items: center;
+	}
 	&__user {
 		& > img {
 			width: 60px;
