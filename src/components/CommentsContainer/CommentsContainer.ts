@@ -1,3 +1,4 @@
+import { makeUserInfo } from '../../user/user'
 import './CommentsContainer.scss'
 
 export class CommentsContainer {
@@ -34,8 +35,8 @@ export class CommentsContainer {
 		const userDiv = document.createElement('div')
 		userDiv.classList.add('comments__user')
 		const userImage = document.createElement('img')
-		userImage.src = '#'
-		userImage.alt = 'user1023'
+		userImage.src = userInfo.userImg
+		userImage.alt = userInfo.userName
 		userDiv.append(userImage)
 
 		const mainDiv = document.createElement('div')
@@ -43,7 +44,7 @@ export class CommentsContainer {
 		const infoDiv = document.createElement('div')
 		infoDiv.classList.add('comments__info')
 		const usernameH2 = document.createElement('h2')
-		usernameH2.textContent = 'user1023'
+		usernameH2.textContent = 'Вы'
 		const maxLengthP = document.createElement('p')
 		maxLengthP.textContent = 'Макс. 1000 символов'
 		infoDiv.appendChild(usernameH2)
@@ -100,11 +101,11 @@ export class CommentsContainer {
 		commentElement.classList.add('comments__comment')
 		commentElement.innerHTML = `
             <div class='comments__user'>
-                <img src='#' alt='user1023'/>
+                <img src=${userInfo.userImg} alt=${userInfo.userImg}/>
             </div>
             <div class='comments__main'>
                 <div class='comments__info'>
-                    <h2>user1023</h2>
+                    <h2>${userInfo.userName}</h2>
                 </div>
                 <p class='comments__text'>${value}</p>
             </div>
@@ -116,3 +117,5 @@ export class CommentsContainer {
 		return this.commentsContainer
 	}
 }
+
+const userInfo = makeUserInfo()

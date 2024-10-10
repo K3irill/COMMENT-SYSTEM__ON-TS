@@ -3,6 +3,7 @@
 .comments {
 	&__container {
 		width: 100%;
+		padding-bottom: 40px;
 	}
 	&__activities {
 		display: flex;
@@ -54,11 +55,11 @@
 		justify-content: space-between;
 	}
 	&__user {
-		background-color: $primary;
-		border-radius: 50%;
-		width: 50px;
-		height: 50px;
-		margin-right: 20px;
+		& > img {
+			width: 60px;
+			height: 60px;
+			border-radius: 50%;
+		}
 	}
 	&__comment {
 		display: flex;
