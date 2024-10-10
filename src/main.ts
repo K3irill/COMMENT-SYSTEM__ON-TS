@@ -2,7 +2,7 @@ import { Aside } from './components/Aside/aside'
 import { Header } from './components/Header/header'
 import { Main } from './components/Main/Main'
 import { MovieContainer } from './components/MovieContainer/movieContainer'
-import './style.css'
+import './style.scss'
 
 export class App {
 	private appElement: HTMLDivElement | null

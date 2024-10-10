@@ -21,13 +21,31 @@ export class MovieContainer {
 		this.movieContent.append(this.cardContainer)
 		this.movieContent.append(this.descriptionEl)
 		this.movieContainer.append(this.movieContent)
-		this.generateCards()
+
+		this.renderCards()
+
+		window.addEventListener('resize', () => this.updateCardCount())
 	}
-	private generateCards() {
-		for (let i = 0; i <= 7; i++) {
+
+	private renderCards(): void {
+		const numberOfCardsToShow = this.getNumberOfCardsToShow()
+		this.cardContainer.innerHTML = ''
+		for (let i = 0; i < Math.min(8, numberOfCardsToShow); i++) {
 			const newCard = new Card()
 			this.cardContainer.append(newCard.getElement())
 		}
+	}
+
+	private getNumberOfCardsToShow(): number {
+		if (window.innerWidth <= 375) {
+			return 2
+		} else {
+			return 8
+		}
+	}
+
+	private updateCardCount(): void {
+		this.renderCards()
 	}
 	public getElement(): HTMLDivElement {
 		return this.movieContainer

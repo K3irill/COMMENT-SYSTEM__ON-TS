@@ -1,6 +1,11 @@
 @import '../../styles/variables.scss';
 .aside {
-	width: 12.5rem;
+	width: 20%;
 	min-height: 100vh;
 	background-color: $primary;
+	@media (max-width: 550px) {
+		& {
+			display: none;
+		}
+	}
 }
