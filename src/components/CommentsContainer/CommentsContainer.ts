@@ -11,6 +11,7 @@ export class CommentsContainer {
 	private commentButton: HTMLInputElement | null
 	private arrayComments: {
 		text: string
+		isReply: boolean
 		user: { userName: string; userImg: string }
 	}[]
 	private commentCountSpan: HTMLSpanElement | null
@@ -96,9 +97,16 @@ export class CommentsContainer {
 			event.preventDefault()
 			const commentValue = this.commentInput!.value.trim()
 			if (commentValue) {
-				this.createComment(commentValue, user, false)
-				this.commentInput!.value = ''
-				this.saveCommentsToStorage()
+				const commentExists = this.arrayComments.some(
+					comment => comment.text === commentValue
+				)
+				if (!commentExists) {
+					this.createComment(commentValue, user, false)
+					this.commentInput!.value = ''
+					this.saveCommentsToStorage()
+				} else {
+					console.warn('Комментарий уже существует:', commentValue)
+				}
 			}
 		})
 	}
@@ -108,7 +116,8 @@ export class CommentsContainer {
 		userInfo: { userName: string; userImg: string },
 		isReply: boolean,
 		parentComment?: HTMLDivElement | null,
-		repliedToUserName?: string
+		repliedToUserName?: string | null,
+		isLocalStorage?: boolean
 	): void {
 		const commentWrapperInfo = document.createElement('div')
 		commentWrapperInfo.classList.add('comments__wrapper-info')
@@ -173,10 +182,19 @@ export class CommentsContainer {
 		decreaseButton.textContent = '-'
 
 		const ratingCount = document.createElement('p')
-		ratingCount.textContent = '10'
+		ratingCount.textContent = '0'
 
 		const increaseButton = document.createElement('button')
 		increaseButton.textContent = '+'
+
+		decreaseButton.addEventListener('click', () => {
+			const currentCount = parseInt(ratingCount.textContent || '0')
+			ratingCount.textContent = Math.max(currentCount - 1, 0).toString()
+		})
+		increaseButton.addEventListener('click', () => {
+			const currentCount = parseInt(ratingCount.textContent || '0')
+			ratingCount.textContent = Math.max(currentCount + 1, 0).toString()
+		})
 
 		ratingDiv.append(decreaseButton)
 		ratingDiv.append(ratingCount)
@@ -199,8 +217,9 @@ export class CommentsContainer {
 		} else {
 			this.commentsContent.prepend(commentElement)
 		}
-
-		this.arrayComments.push({ text: value, user: userInfo })
+		if (!isLocalStorage) {
+			this.arrayComments.push({ text: value, isReply: isReply, user: userInfo })
+		}
 		this.updateAmountOfComment()
 		console.log(this.arrayComments)
 
@@ -240,8 +259,9 @@ export class CommentsContainer {
 							true,
 							commentElement,
 							repliedToUserName!
-						) // Передаем имя
+						)
 						replyInput.value = ''
+						this.saveCommentsToStorage()
 					}
 				})
 			}
@@ -250,6 +270,7 @@ export class CommentsContainer {
 	private saveCommentsToStorage(): void {
 		const commentsToSave = this.arrayComments.map(comment => ({
 			text: comment.text,
+			isReply: comment.isReply,
 			user: {
 				userName: comment.user.userName,
 				userImg: comment.user.userImg,
@@ -261,12 +282,18 @@ export class CommentsContainer {
 
 	private loadCommentsFromStorage(): void {
 		const savedComments = localStorage.getItem('comments')
-		if (savedComments) {
-			this.arrayComments = JSON.parse(savedComments)
 
-			this.arrayComments.forEach(({ text, user }) => {
-				if (user && user.userImg && user.userName) {
-					this.createComment(text, user, false) // Передаем правильные параметры
+		this.arrayComments = []
+
+		if (savedComments) {
+			const parsedComments = JSON.parse(savedComments)
+			this.arrayComments = parsedComments
+
+			this.arrayComments.forEach(({ text, isReply, user }) => {
+				if (user && user.userImg && user.userName && isReply !== true) {
+					this.createComment(text, user, false, null, null, true)
+				} else if (user && user.userImg && user.userName && isReply === true) {
+					this.createComment(text, user, true, null, null, true)
 				} else {
 					console.warn('Данные пользователя неполные для комментария:', text)
 				}
