@@ -12,6 +12,8 @@ export class CommentsContainer {
 	private arrayComments: {
 		text: string
 		isReply: boolean
+		parentCommentId?: number | null
+		repliedToUserName?: string | null
 		user: { userName: string; userImg: string }
 	}[]
 	private commentCountSpan: HTMLSpanElement | null
@@ -101,7 +103,7 @@ export class CommentsContainer {
 					comment => comment.text === commentValue
 				)
 				if (!commentExists) {
-					this.createComment(commentValue, user, false)
+					this.createComment(commentValue, user, false, null)
 					this.commentInput!.value = ''
 					this.saveCommentsToStorage()
 				} else {
@@ -217,11 +219,22 @@ export class CommentsContainer {
 		} else {
 			this.commentsContent.prepend(commentElement)
 		}
+
 		if (!isLocalStorage) {
-			this.arrayComments.push({ text: value, isReply: isReply, user: userInfo })
+			const parentIndex = parentComment
+				? Array.from(this.commentsContent.children).indexOf(parentComment)
+				: null
+
+			this.arrayComments.push({
+				text: value,
+				isReply: isReply,
+				parentCommentId: parentIndex,
+				repliedToUserName: repliedToUserName,
+				user: userInfo,
+			})
 		}
-		this.updateAmountOfComment()
 		console.log(this.arrayComments)
+		this.updateAmountOfComment()
 
 		replyButton.addEventListener('click', () => {
 			let existingReplyForm = mainDiv.querySelector('#reply-form')
@@ -258,19 +271,28 @@ export class CommentsContainer {
 							user,
 							true,
 							commentElement,
-							repliedToUserName!
+							repliedToUserName
 						)
-						replyInput.value = ''
 						this.saveCommentsToStorage()
+						replyForm.remove()
 					}
 				})
 			}
 		})
 	}
+
+	private updateAmountOfComment(): void {
+		if (this.commentCountSpan) {
+			this.commentCountSpan.textContent = `(${this.arrayComments.length})`
+		}
+	}
+
 	private saveCommentsToStorage(): void {
-		const commentsToSave = this.arrayComments.map(comment => ({
+		const commentsToSave = this.arrayComments.map((comment, index) => ({
 			text: comment.text,
 			isReply: comment.isReply,
+			parentCommentId: comment.isReply ? comment.parentCommentId : null,
+			repliedToUserName: comment.isReply ? comment.repliedToUserName : null,
 			user: {
 				userName: comment.user.userName,
 				userImg: comment.user.userImg,
@@ -289,24 +311,27 @@ export class CommentsContainer {
 			const parsedComments = JSON.parse(savedComments)
 			this.arrayComments = parsedComments
 
-			this.arrayComments.forEach(({ text, isReply, user }) => {
-				if (user && user.userImg && user.userName && isReply !== true) {
-					this.createComment(text, user, false, null, null, true)
-				} else if (user && user.userImg && user.userName && isReply === true) {
-					this.createComment(text, user, true, null, null, true)
-				} else {
-					console.warn('Данные пользователя неполные для комментария:', text)
+			this.arrayComments.forEach(
+				({ text, isReply, parentCommentId, repliedToUserName, user }) => {
+					let parentCommentElement = null
+					if (isReply && typeof parentCommentId === 'number') {
+						parentCommentElement = this.commentsContent.children[
+							parentCommentId
+						] as HTMLDivElement
+					}
+					this.createComment(
+						text,
+						user,
+						isReply,
+						parentCommentElement,
+						repliedToUserName,
+						true
+					)
 				}
-			})
+			)
 		}
 
 		this.updateAmountOfComment()
-	}
-
-	private updateAmountOfComment(): void {
-		if (this.commentCountSpan) {
-			this.commentCountSpan.textContent = `(${this.arrayComments.length})`
-		}
 	}
 
 	public getElement(): HTMLDivElement {
