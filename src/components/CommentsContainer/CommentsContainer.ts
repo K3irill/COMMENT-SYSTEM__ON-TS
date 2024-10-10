@@ -15,6 +15,7 @@ export class CommentsContainer {
 		parentCommentId?: number | null
 		repliedToUserName?: string | null
 		user: { userName: string; userImg: string }
+		rating?: number
 	}[]
 	private commentCountSpan: HTMLSpanElement | null
 
@@ -119,7 +120,8 @@ export class CommentsContainer {
 		isReply: boolean,
 		parentComment?: HTMLDivElement | null,
 		repliedToUserName?: string | null,
-		isLocalStorage?: boolean
+		isLocalStorage?: boolean,
+		rating: number = 0
 	): void {
 		const commentWrapperInfo = document.createElement('div')
 		commentWrapperInfo.classList.add('comments__wrapper-info')
@@ -184,18 +186,39 @@ export class CommentsContainer {
 		decreaseButton.textContent = '-'
 
 		const ratingCount = document.createElement('p')
-		ratingCount.textContent = '0'
+		ratingCount.textContent = rating.toString()
 
 		const increaseButton = document.createElement('button')
 		increaseButton.textContent = '+'
 
 		decreaseButton.addEventListener('click', () => {
 			const currentCount = parseInt(ratingCount.textContent || '0')
-			ratingCount.textContent = Math.max(currentCount - 1, 0).toString()
+			const voteStatus = this.getVoteStatus(value)
+
+			if (voteStatus !== 'down') {
+				this.updateVoteStatus(value, 'down')
+				ratingCount.textContent = Math.max(currentCount - 1, 0).toString()
+				const commentIndex = this.arrayComments.findIndex(
+					comment => comment.text === value
+				)
+				this.arrayComments[commentIndex].rating = Math.max(currentCount - 1, 0)
+				this.saveCommentsToStorage()
+			}
 		})
+
 		increaseButton.addEventListener('click', () => {
 			const currentCount = parseInt(ratingCount.textContent || '0')
-			ratingCount.textContent = Math.max(currentCount + 1, 0).toString()
+			const voteStatus = this.getVoteStatus(value)
+
+			if (voteStatus !== 'up') {
+				this.updateVoteStatus(value, 'up')
+				ratingCount.textContent = Math.max(currentCount + 1, 0).toString()
+				const commentIndex = this.arrayComments.findIndex(
+					comment => comment.text === value
+				)
+				this.arrayComments[commentIndex].rating = Math.max(currentCount + 1, 0)
+				this.saveCommentsToStorage()
+			}
 		})
 
 		ratingDiv.append(decreaseButton)
@@ -231,6 +254,7 @@ export class CommentsContainer {
 				parentCommentId: parentIndex,
 				repliedToUserName: repliedToUserName,
 				user: userInfo,
+				rating: 0,
 			})
 		}
 		console.log(this.arrayComments)
@@ -280,7 +304,24 @@ export class CommentsContainer {
 			}
 		})
 	}
+	private updateVoteStatus(commentText: string, voteType: 'up' | 'down'): void {
+		let votes = localStorage.getItem('votes')
+		if (!votes) {
+			votes = '{}'
+		}
+		const parsedVotes = JSON.parse(votes)
 
+		parsedVotes[commentText] = voteType
+		localStorage.setItem('votes', JSON.stringify(parsedVotes))
+	}
+
+	private getVoteStatus(commentText: string): 'up' | 'down' | null {
+		const votes = localStorage.getItem('votes')
+		if (!votes) return null
+
+		const parsedVotes = JSON.parse(votes)
+		return parsedVotes[commentText] || null
+	}
 	private updateAmountOfComment(): void {
 		if (this.commentCountSpan) {
 			this.commentCountSpan.textContent = `(${this.arrayComments.length})`
@@ -288,7 +329,7 @@ export class CommentsContainer {
 	}
 
 	private saveCommentsToStorage(): void {
-		const commentsToSave = this.arrayComments.map((comment, index) => ({
+		const commentsToSave = this.arrayComments.map(comment => ({
 			text: comment.text,
 			isReply: comment.isReply,
 			parentCommentId: comment.isReply ? comment.parentCommentId : null,
@@ -297,6 +338,7 @@ export class CommentsContainer {
 				userName: comment.user.userName,
 				userImg: comment.user.userImg,
 			},
+			rating: comment.rating,
 		}))
 
 		localStorage.setItem('comments', JSON.stringify(commentsToSave))
@@ -304,7 +346,6 @@ export class CommentsContainer {
 
 	private loadCommentsFromStorage(): void {
 		const savedComments = localStorage.getItem('comments')
-
 		this.arrayComments = []
 
 		if (savedComments) {
@@ -312,21 +353,59 @@ export class CommentsContainer {
 			this.arrayComments = parsedComments
 
 			this.arrayComments.forEach(
-				({ text, isReply, parentCommentId, repliedToUserName, user }) => {
-					let parentCommentElement = null
+				({
+					text,
+					isReply,
+					parentCommentId,
+					repliedToUserName,
+					user,
+					rating,
+				}) => {
+					let parentCommentElement: HTMLDivElement | null = null
+
 					if (isReply && typeof parentCommentId === 'number') {
-						parentCommentElement = this.commentsContent.children[
-							parentCommentId
-						] as HTMLDivElement
+						const element = this.commentsContent.children[parentCommentId]
+						if (element instanceof HTMLDivElement) {
+							parentCommentElement = element
+						} else {
+							console.warn(
+								`Parent comment with id ${parentCommentId} not found.`
+							)
+						}
 					}
+
 					this.createComment(
 						text,
 						user,
 						isReply,
 						parentCommentElement,
 						repliedToUserName,
-						true
+						true,
+						rating
 					)
+
+					const currentCommentIndex = this.arrayComments.findIndex(
+						comment => comment.text === text
+					)
+
+					if (
+						currentCommentIndex >= 0 &&
+						currentCommentIndex < this.commentsContent.children.length
+					) {
+						const ratingCountElement = this.commentsContent.children[
+							currentCommentIndex
+						].querySelector('.comment-activities__count p')
+
+						if (ratingCountElement) {
+							ratingCountElement.textContent = rating!.toString()
+						} else {
+							console.warn('ratingCountElement не найден')
+						}
+					} else {
+						console.warn(
+							`Comment index ${currentCommentIndex} is out of bounds.`
+						)
+					}
 				}
 			)
 		}
