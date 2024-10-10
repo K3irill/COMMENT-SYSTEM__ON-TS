@@ -2,8 +2,12 @@
 
 .comments {
 	&__container {
+		width: 100%;
 	}
 	&__activities {
+		display: flex;
+		flex-wrap: wrap;
+		width: 100%;
 		border-top: 2px solid $primary;
 		margin-top: 25px;
 		padding-top: 15px;
@@ -22,6 +26,39 @@
 				background-color: rgb(89, 90, 88);
 			}
 		}
+	}
+	&__form-container {
+		display: flex;
+		align-items: center;
+	}
+	&__main {
+		width: 100%;
+		padding: 0px 20px;
+		& > form {
+			display: flex;
+			height: 40px;
+			& > input[type='text'] {
+				width: 100%;
+				padding: 0px 10px;
+				font-size: 18px;
+			}
+			& > input[type='button'] {
+				margin-left: 20px;
+				cursor: pointer;
+			}
+		}
+	}
+
+	&__info {
+		display: flex;
+		justify-content: space-between;
+	}
+	&__user {
+		background-color: $primary;
+		border-radius: 50%;
+		width: 50px;
+		height: 50px;
+		margin-right: 20px;
 	}
 }
 .--active {
