@@ -1,0 +1,31 @@
+@import '../../styles/variables.scss';
+
+.comments {
+	&__container {
+	}
+	&__activities {
+		border-top: 2px solid $primary;
+		margin-top: 25px;
+		padding-top: 15px;
+		display: flex;
+		& > button,
+		select {
+			background-color: transparent;
+			border: none;
+			text-decoration: underline;
+			cursor: pointer;
+			text-align: center;
+			width: fit-content;
+		}
+		& > select {
+			&:focus {
+				background-color: rgb(89, 90, 88);
+			}
+		}
+	}
+}
+.--active {
+	font-size: 18px;
+	font-weight: bold;
+	color: rgb(118, 109, 109);
+}
