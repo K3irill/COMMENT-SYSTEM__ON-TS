@@ -1,3 +1,4 @@
+import './aside.scss'
 export class Aside {
 	public asideElement: HTMLElement
 	constructor() {
