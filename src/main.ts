@@ -1,7 +1,7 @@
 import { Aside } from './components/Aside/aside'
-import { Card } from './components/Card/Card'
 import { Header } from './components/Header/header'
 import { Main } from './components/Main/Main'
+import { MovieContainer } from './components/MovieContainer/movieContainer'
 import './style.css'
 
 export class App {
@@ -33,12 +33,5 @@ contentContainer.append(main.getElement())
 app.render(header.getElement())
 app.render(contentContainer)
 
-const cardContainer = document.createElement('div')
-cardContainer.classList.add('card-container')
-
-for (let i = 0; i <= 7; i++) {
-	const newCard = new Card()
-	cardContainer.append(newCard.getElement())
-}
-
-main.render(cardContainer)
+const movieContainer = new MovieContainer()
+main.render(movieContainer.getElement())
