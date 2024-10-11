@@ -299,11 +299,31 @@ export class CommentsContainer {
 		this.updateAmountOfComment()
 
 		favoriteButton.addEventListener('click', () => {
-			const favoriteCommentElement = commentElement.cloneNode(true)
-			this.commentsFavoriteContainer?.append(favoriteCommentElement)
+			const commentHTMLElement = commentElement as HTMLElement
 
-			const emptyMessage = this.commentsFavoriteContainer?.querySelector('h3')
-			if (emptyMessage) {
+			if (!this.commentsFavoriteContainer) {
+				return
+			}
+
+			const existingFavoriteComment =
+				this.commentsFavoriteContainer.querySelector(
+					`[data-id="${commentHTMLElement.dataset.id}"]`
+				)
+
+			if (existingFavoriteComment) {
+				existingFavoriteComment.remove()
+				favoriteButton.textContent = 'В избранное'
+			} else {
+				const favoriteCommentElement = commentHTMLElement.cloneNode(
+					true
+				) as HTMLElement
+				favoriteCommentElement.dataset.id = commentHTMLElement.dataset.id
+				this.commentsFavoriteContainer.append(favoriteCommentElement)
+				favoriteButton.textContent = 'В избранном'
+			}
+
+			const emptyMessage = this.commentsFavoriteContainer.querySelector('h3')
+			if (emptyMessage && this.commentsFavoriteContainer.children.length > 1) {
 				emptyMessage.remove()
 			}
 		})
@@ -466,8 +486,14 @@ export class CommentsContainer {
 		return this.commentsContainer
 	}
 }
-// const exampleUser: any = {
-// 	userName: 'Алексей_1994b',
-// 	userImg:
-// 		'https://avatars.dzeninfra.ru/get-zen-logos/246004/pub_5ebfd74dec0f7529ba5ece20_5ebfdc39b2e1b32bf1076ca4/xxh',
-// }
+
+interface exampleUser {
+	userName: string
+	userImg: string
+}
+
+const exampleUser: exampleUser = {
+	userName: 'Алексей_1994b',
+	userImg:
+		'https://avatars.dzeninfra.ru/get-zen-logos/246004/pub_5ebfd74dec0f7529ba5ece20_5ebfdc39b2e1b32bf1076ca4/xxh',
+}
