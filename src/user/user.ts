@@ -2,10 +2,13 @@ const users: string[] = loadUsersFromStorage() || []
 console.log(users)
 
 export function makeUserInfo() {
-	const savedUserInfo = loadUserInfoFromStorage()
+	const currentUserName = loadCurrentUserNameFromStorage()
 
-	if (savedUserInfo) {
-		return savedUserInfo
+	if (currentUserName) {
+		const savedUserInfo = loadUserInfoFromStorage(currentUserName)
+		if (savedUserInfo) {
+			return savedUserInfo
+		}
 	}
 
 	const userName = getUserName()
@@ -13,8 +16,8 @@ export function makeUserInfo() {
 
 	if (userName && userImg) {
 		const userInfo = { userName, userImg }
-
-		saveUserInfoToStorage(userInfo)
+		saveUserInfoToStorage(userInfo, userName)
+		saveCurrentUserNameToStorage(userName)
 		return userInfo
 	} else {
 		throw new Error('Не удалось создать пользователя')
@@ -23,7 +26,6 @@ export function makeUserInfo() {
 
 function getUserName(): string {
 	const isNeedUserName = confirm('Вы хотите ввести никнейм или по дефолту?')
-
 	let userName: string
 
 	if (isNeedUserName) {
@@ -100,18 +102,77 @@ function isValidUrl(url: string | null): boolean {
 	}
 }
 
-//-----------------------------------------------------
-function saveUserInfoToStorage(userInfo: {
-	userName: string
-	userImg: string
-}) {
-	localStorage.setItem('userInfo', JSON.stringify(userInfo))
+export function switchUser() {
+	const userName = prompt('Введите имя пользователя для переключения:')
+	if (userName && users.includes(userName)) {
+		saveCurrentUserNameToStorage(userName)
+		alert(`Переключено на пользователя: ${userName}`)
+
+		const currentUserInfo = loadUserInfoFromStorage(userName)
+		window.location.reload()
+		if (currentUserInfo) {
+			console.log(
+				`Текущий пользователь: ${currentUserInfo.userName}`,
+				currentUserInfo.userImg
+			)
+		}
+	} else {
+		alert('Пользователь не найден!')
+	}
 }
 
-function loadUserInfoFromStorage(): {
+export function createNewUser() {
+	let userName: string | null
+
+	do {
+		userName = prompt('Введите имя пользователя:')
+		if (userName === null) {
+			alert('Создание пользователя отменено.')
+			return
+		}
+		if (userName.trim() === '') {
+			alert('Имя пользователя не может быть пустым. Пожалуйста, введите имя.')
+		} else if (users.includes(userName)) {
+			alert('Извините, это имя занято. Пожалуйста, выберите другое имя.')
+		}
+	} while (userName && (userName.trim() === '' || users.includes(userName)))
+
+	if (userName) {
+		users.push(userName)
+		saveUsersToStorage(users)
+
+		const userImg = getUserImg()
+		const userInfo = { userName, userImg }
+		saveUserInfoToStorage(userInfo, userName)
+		saveCurrentUserNameToStorage(userName)
+		window.location.reload()
+	}
+}
+
+//-----------------------------------------------------
+function saveUserInfoToStorage(
+	userInfo: { userName: string; userImg: string },
 	userName: string
-	userImg: string
-} | null {
+) {
+	const allUserInfo = loadAllUserInfoFromStorage() || {}
+	allUserInfo[userName] = userInfo
+	localStorage.setItem('userInfo', JSON.stringify(allUserInfo))
+}
+
+function loadUserInfoFromStorage(
+	userName: string
+): { userName: string; userImg: string } | null {
+	const allUserInfo = loadAllUserInfoFromStorage()
+	if (allUserInfo && allUserInfo[userName]) {
+		return allUserInfo[userName]
+	}
+	return null
+}
+
+function loadAllUserInfoFromStorage(): Record<
+	string,
+	{ userName: string; userImg: string }
+> | null {
 	const savedUserInfo = localStorage.getItem('userInfo')
 	if (savedUserInfo) {
 		return JSON.parse(savedUserInfo)
@@ -129,4 +190,12 @@ function loadUsersFromStorage(): string[] | null {
 		return JSON.parse(savedUsers)
 	}
 	return null
+}
+
+function saveCurrentUserNameToStorage(userName: string) {
+	localStorage.setItem('currentUser', userName)
+}
+
+function loadCurrentUserNameFromStorage(): string | null {
+	return localStorage.getItem('currentUser')
 }

@@ -1,4 +1,4 @@
-import { makeUserInfo } from '../../user/user'
+import { createNewUser, makeUserInfo, switchUser } from '../../user/user'
 import './CommentsContainer.scss'
 
 const user = makeUserInfo()
@@ -40,9 +40,24 @@ export class CommentsContainer {
                 <option value="amountReplies">По количеству ответов</option>
             </select>
             <button id="favorite-btn">Избранное <span></span></button>
+							<div class='admin'>
+							<p style='color: red'>ДЛЯ ТЕСТА</p>
+							<button id='switch-user'>Переключиться между пользователями</button> 						  
+							<button id='create-user'>Новый пользователь</button>
+						</div>
+						
         `
-		//
+		//switchUser
 		this.commentsActivities.innerHTML = activitiesHTML
+
+		const switchUserBtn = this.commentsActivities.querySelector('#switch-user')
+		switchUserBtn?.addEventListener('click', () => {
+			switchUser()
+		})
+		const createUserBtn = this.commentsActivities.querySelector('#create-user')
+		createUserBtn?.addEventListener('click', () => {
+			createNewUser()
+		})
 
 		this.commentCountSpan =
 			this.commentsActivities.querySelector('#comment-count')
@@ -322,7 +337,6 @@ export class CommentsContainer {
 				date: currentDate,
 			})
 		}
-		console.log(this.arrayComments)
 		this.updateAmountOfComment()
 
 		favoriteButton.addEventListener('click', () => {

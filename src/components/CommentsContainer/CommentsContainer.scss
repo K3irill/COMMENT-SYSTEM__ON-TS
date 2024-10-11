@@ -135,3 +135,20 @@
 .hidden {
 	display: none;
 }
+.admin {
+	border: 1px solid red;
+	position: absolute;
+	top: 5px;
+	right: 5px;
+
+	& button {
+		cursor: pointer;
+		border: none;
+		padding: 5px;
+		margin: 5px;
+		background-color: rgb(186, 24, 73);
+		&:hover {
+			opacity: 0.5;
+		}
+	}
+}
