@@ -16,6 +16,7 @@ export class CommentsContainer {
 		repliedToUserName?: string | null
 		user: { userName: string; userImg: string }
 		rating?: number
+		date: Date | undefined
 	}[]
 	private commentCountSpan: HTMLSpanElement | null
 	private commentMainButton: HTMLElement | null
@@ -33,10 +34,10 @@ export class CommentsContainer {
 		const activitiesHTML = `
             <button  id="mainComments-btn">Комментарии <span id="comment-count">(${this.arrayComments.length})</span></button>
             <select name="filters" id="filters-select">
-                <option value="">Please choose an option</option>
-                <option value="popular">По количеству оценок</option>
-                <option value="new">Новые</option>
-                <option value="old">Старые</option>
+                <option value="">По количеству оценок</option>
+                <option value="popular">По дате</option>
+                <option value="new">По актуальности</option>
+                <option value="old">По количеству ответов</option>
             </select>
             <button id="favorite-btn">Избранное <span></span></button>
         `
@@ -159,7 +160,8 @@ export class CommentsContainer {
 		parentComment?: HTMLDivElement | null,
 		repliedToUserName?: string | null,
 		isLocalStorage?: boolean,
-		rating: number = 0
+		rating: number = 0,
+		date?: Date | undefined
 	): void {
 		const commentWrapperInfo = document.createElement('div')
 		commentWrapperInfo.classList.add('comments__wrapper-info')
@@ -189,7 +191,23 @@ export class CommentsContainer {
 			infoDiv.classList.add('comments__info')
 		}
 		const userNameHeading = document.createElement('h2')
+		userNameHeading.classList.add('heading')
 		userNameHeading.textContent = userInfo.userName
+
+		let currentDate = date ? new Date(date) : new Date()
+
+		const timeAndDateComment = document.createElement('p')
+		timeAndDateComment.style.fontSize = '14px'
+		timeAndDateComment.textContent = `${currentDate.getDate()}.${
+			currentDate.getMonth() + 1
+		}.${currentDate
+			.getFullYear()
+			.toString()
+			.substr(-2)} ${currentDate.getHours()}:${
+			currentDate.getMinutes() < 10
+				? '0' + currentDate.getMinutes()
+				: currentDate.getMinutes()
+		}`
 
 		infoDiv.append(userNameHeading)
 
@@ -197,7 +215,11 @@ export class CommentsContainer {
 			const replyByUserName = document.createElement('p')
 			replyByUserName.style.marginLeft = '10px'
 			replyByUserName.textContent = `to ${repliedToUserName}`
+			timeAndDateComment.style.marginLeft = '10px'
 			infoDiv.append(replyByUserName)
+			infoDiv.append(timeAndDateComment)
+		} else {
+			infoDiv.append(timeAndDateComment)
 		}
 
 		const commentText = document.createElement('p')
@@ -235,11 +257,11 @@ export class CommentsContainer {
 
 			if (voteStatus !== 'down') {
 				this.updateVoteStatus(value, 'down')
-				ratingCount.textContent = Math.max(currentCount - 1, 0).toString()
+				ratingCount.textContent = (currentCount - 1).toString()
 				const commentIndex = this.arrayComments.findIndex(
 					comment => comment.text === value
 				)
-				this.arrayComments[commentIndex].rating = Math.max(currentCount - 1, 0)
+				this.arrayComments[commentIndex].rating = currentCount - 1
 				this.saveCommentsToStorage()
 			}
 		})
@@ -250,11 +272,11 @@ export class CommentsContainer {
 
 			if (voteStatus !== 'up') {
 				this.updateVoteStatus(value, 'up')
-				ratingCount.textContent = Math.max(currentCount + 1, 0).toString()
+				ratingCount.textContent = (currentCount + 1).toString()
 				const commentIndex = this.arrayComments.findIndex(
 					comment => comment.text === value
 				)
-				this.arrayComments[commentIndex].rating = Math.max(currentCount + 1, 0)
+				this.arrayComments[commentIndex].rating = currentCount + 1
 				this.saveCommentsToStorage()
 			}
 		})
@@ -293,6 +315,7 @@ export class CommentsContainer {
 				repliedToUserName: repliedToUserName,
 				user: userInfo,
 				rating: 0,
+				date: date,
 			})
 		}
 		console.log(this.arrayComments)
@@ -313,7 +336,9 @@ export class CommentsContainer {
 			if (existingFavoriteComment) {
 				existingFavoriteComment.remove()
 				favoriteButton.textContent = 'В избранное'
+				favoriteButton.style.color = 'white'
 			} else {
+				favoriteButton.style.color = '#aa2222'
 				const favoriteCommentElement = commentHTMLElement.cloneNode(
 					true
 				) as HTMLElement
@@ -408,6 +433,12 @@ export class CommentsContainer {
 				userImg: comment.user.userImg,
 			},
 			rating: comment.rating,
+			date: comment.date
+				? (comment.date instanceof Date
+						? comment.date
+						: new Date(comment.date)
+				  ).toISOString()
+				: new Date().toISOString(),
 		}))
 
 		localStorage.setItem('comments', JSON.stringify(commentsToSave))
@@ -429,6 +460,7 @@ export class CommentsContainer {
 					repliedToUserName,
 					user,
 					rating,
+					date,
 				}) => {
 					let parentCommentElement: HTMLDivElement | null = null
 
@@ -443,6 +475,9 @@ export class CommentsContainer {
 						}
 					}
 
+					const commentDate =
+						date !== undefined && date !== null ? new Date(date) : new Date()
+
 					this.createComment(
 						text,
 						user,
@@ -450,31 +485,9 @@ export class CommentsContainer {
 						parentCommentElement,
 						repliedToUserName,
 						true,
-						rating
+						rating,
+						commentDate
 					)
-
-					const currentCommentIndex = this.arrayComments.findIndex(
-						comment => comment.text === text
-					)
-
-					if (
-						currentCommentIndex >= 0 &&
-						currentCommentIndex < this.commentsContent.children.length
-					) {
-						const ratingCountElement = this.commentsContent.children[
-							currentCommentIndex
-						].querySelector('.comment-activities__count p')
-
-						if (ratingCountElement) {
-							ratingCountElement.textContent = rating!.toString()
-						} else {
-							console.warn('ratingCountElement не найден')
-						}
-					} else {
-						console.warn(
-							`Comment index ${currentCommentIndex} is out of bounds.`
-						)
-					}
 				}
 			)
 		}

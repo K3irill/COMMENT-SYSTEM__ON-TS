@@ -52,7 +52,16 @@
 
 	&__info {
 		display: flex;
-		justify-content: space-between;
+		align-items: end;
+		// justify-content: space-between;
+		margin: 10px 0;
+		& h2,
+		p {
+			margin: 0;
+		}
+		& h2 {
+			margin-right: 10px;
+		}
 	}
 	&__info-reply {
 		display: flex;
