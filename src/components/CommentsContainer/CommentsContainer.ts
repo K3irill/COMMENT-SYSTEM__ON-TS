@@ -34,10 +34,10 @@ export class CommentsContainer {
 		const activitiesHTML = `
             <button  id="mainComments-btn">Комментарии <span id="comment-count">(${this.arrayComments.length})</span></button>
             <select name="filters" id="filters-select">
-                <option value="">По количеству оценок</option>
-                <option value="popular">По дате</option>
-                <option value="new">По актуальности</option>
-                <option value="old">По количеству ответов</option>
+                <option value="rating">По количеству оценок</option>
+                <option value="old">По актуальности(убывание)</option>
+                <option value="new">По актуальности(возрастание)</option>
+                <option value="amountReplies">По количеству ответов</option>
             </select>
             <button id="favorite-btn">Избранное <span></span></button>
         `
@@ -52,6 +52,12 @@ export class CommentsContainer {
 			this.commentsActivities.querySelector('#favorite-btn')
 		this.commentMainButton?.classList.add('--active')
 		//
+		const filtersSelect =
+			this.commentsActivities.querySelector('#filters-select')
+		filtersSelect?.addEventListener('change', event => {
+			const selectedOption = (event.target as HTMLSelectElement).value
+			this.sortComments(selectedOption)
+		})
 
 		this.commentsFormContainer = document.createElement('div')
 		this.commentsFormContainer.classList.add('comments__form-container')
@@ -161,7 +167,7 @@ export class CommentsContainer {
 		repliedToUserName?: string | null,
 		isLocalStorage?: boolean,
 		rating: number = 0,
-		date?: Date | undefined
+		date?: Date | string
 	): void {
 		const commentWrapperInfo = document.createElement('div')
 		commentWrapperInfo.classList.add('comments__wrapper-info')
@@ -185,16 +191,14 @@ export class CommentsContainer {
 		mainDiv.classList.add('comments__main')
 
 		const infoDiv = document.createElement('div')
-		if (isReply) {
-			infoDiv.classList.add('comments__info-reply')
-		} else {
-			infoDiv.classList.add('comments__info')
-		}
+		infoDiv.classList.add(isReply ? 'comments__info-reply' : 'comments__info')
+
 		const userNameHeading = document.createElement('h2')
 		userNameHeading.classList.add('heading')
 		userNameHeading.textContent = userInfo.userName
 
-		let currentDate = date ? new Date(date) : new Date()
+		const currentDate =
+			date instanceof Date ? date : date ? new Date(date) : new Date()
 
 		const timeAndDateComment = document.createElement('p')
 		timeAndDateComment.style.fontSize = '14px'
@@ -315,7 +319,7 @@ export class CommentsContainer {
 				repliedToUserName: repliedToUserName,
 				user: userInfo,
 				rating: 0,
-				date: date,
+				date: currentDate,
 			})
 		}
 		console.log(this.arrayComments)
@@ -398,6 +402,61 @@ export class CommentsContainer {
 		})
 	}
 
+	private sortComments(criteria: string): void {
+		switch (criteria) {
+			case 'rating':
+				this.arrayComments.sort((a, b) => (a.rating || 0) - (b.rating || 0))
+				break
+
+			case 'old':
+				this.arrayComments.sort((a, b) => {
+					const dateA = a.date ? new Date(a.date).getTime() : 0
+					const dateB = b.date ? new Date(b.date).getTime() : 0
+					return dateA - dateB
+				})
+				break
+
+			case 'new':
+				this.arrayComments.sort((a, b) => {
+					const dateA = a.date ? new Date(a.date).getTime() : 0
+					const dateB = b.date ? new Date(b.date).getTime() : 0
+					return dateB - dateA
+				})
+				break
+
+			case 'amountReplies':
+				this.arrayComments.sort(
+					(a, b) => this.getReplyCount(a.text) - this.getReplyCount(b.text)
+				)
+				break
+		}
+		this.updateCommentsDisplay()
+	}
+
+	private getReplyCount(commentText: string): number {
+		return this.arrayComments.filter(
+			comment =>
+				comment.parentCommentId !== null && comment.text.includes(commentText)
+		).length
+	}
+
+	private updateCommentsDisplay(): void {
+		this.commentsContent.innerHTML = ''
+
+		this.arrayComments.forEach(comment => {
+			this.createComment(
+				comment.text,
+				comment.user,
+				comment.isReply,
+				null,
+				comment.repliedToUserName,
+				true,
+				comment.rating,
+				comment.date
+			)
+		})
+	}
+
 	private updateVoteStatus(commentText: string, voteType: 'up' | 'down'): void {
 		let votes = localStorage.getItem('votes')
 		if (!votes) {
@@ -434,10 +493,7 @@ export class CommentsContainer {
 			},
 			rating: comment.rating,
 			date: comment.date
-				? (comment.date instanceof Date
-						? comment.date
-						: new Date(comment.date)
-				  ).toISOString()
+				? comment.date.toISOString()
 				: new Date().toISOString(),
 		}))
 
@@ -449,8 +505,11 @@ export class CommentsContainer {
 		this.arrayComments = []
 
 		if (savedComments) {
-			const parsedComments = JSON.parse(savedComments)
-			this.arrayComments = parsedComments
+			const parsedComments: Comment[] = JSON.parse(savedComments)
+			this.arrayComments = parsedComments.map(comment => ({
+				...comment,
+				date: comment.date ? new Date(comment.date) : new Date(),
+			}))
 
 			this.arrayComments.forEach(
 				({
@@ -475,9 +534,6 @@ export class CommentsContainer {
 						}
 					}
 
-					const commentDate =
-						date !== undefined && date !== null ? new Date(date) : new Date()
-
 					this.createComment(
 						text,
 						user,
@@ -486,7 +542,7 @@ export class CommentsContainer {
 						repliedToUserName,
 						true,
 						rating,
-						commentDate
+						date
 					)
 				}
 			)
@@ -509,4 +565,13 @@ const exampleUser: exampleUser = {
 	userName: 'Алексей_1994b',
 	userImg:
 		'https://avatars.dzeninfra.ru/get-zen-logos/246004/pub_5ebfd74dec0f7529ba5ece20_5ebfdc39b2e1b32bf1076ca4/xxh',
+}
+interface Comment {
+	text: string
+	isReply: boolean
+	parentCommentId?: number
+	repliedToUserName?: string | null
+	user: { userName: string; userImg: string }
+	rating: number
+	date?: string
 }
