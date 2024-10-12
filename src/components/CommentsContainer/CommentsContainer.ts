@@ -303,30 +303,30 @@ export class CommentsContainer {
 			const currentCount = parseInt(ratingCount.textContent || '0')
 			const voteStatus = this.getVoteStatus(value)
 
-			// if (voteStatus !== 'down') {
-			this.updateVoteStatus(value, 'down')
-			ratingCount.textContent = (currentCount - 1).toString()
-			const commentIndex = this.arrayComments.findIndex(
-				comment => comment.text === value
-			)
-			this.arrayComments[commentIndex].rating = currentCount - 1
-			this.saveCommentsToStorage()
-			// }
+			if (voteStatus !== 'down') {
+				this.updateVoteStatus(value, 'down')
+				ratingCount.textContent = (currentCount - 1).toString()
+				const commentIndex = this.arrayComments.findIndex(
+					comment => comment.text === value
+				)
+				this.arrayComments[commentIndex].rating = currentCount - 1
+				this.saveCommentsToStorage()
+			}
 		})
 
 		increaseButton.addEventListener('click', () => {
 			const currentCount = parseInt(ratingCount.textContent || '0')
 			const voteStatus = this.getVoteStatus(value)
 
-			// if (voteStatus !== 'up') {
-			this.updateVoteStatus(value, 'up')
-			ratingCount.textContent = (currentCount + 1).toString()
-			const commentIndex = this.arrayComments.findIndex(
-				comment => comment.text === value
-			)
-			this.arrayComments[commentIndex].rating = currentCount + 1
-			this.saveCommentsToStorage()
-			// }
+			if (voteStatus !== 'up') {
+				this.updateVoteStatus(value, 'up')
+				ratingCount.textContent = (currentCount + 1).toString()
+				const commentIndex = this.arrayComments.findIndex(
+					comment => comment.text === value
+				)
+				this.arrayComments[commentIndex].rating = currentCount + 1
+				this.saveCommentsToStorage()
+			}
 		})
 
 		ratingDiv.append(decreaseButton)
@@ -373,7 +373,7 @@ export class CommentsContainer {
 			)
 			if (parentCommentIndex > -1) {
 				this.arrayComments[parentCommentIndex].repliesArr?.push({
-					text: value, //!не забыть исправить
+					text: value,
 					isReply: isReply,
 					isFavorite: isFavorite,
 					parentCommentId: parentCommentId,
@@ -386,7 +386,7 @@ export class CommentsContainer {
 				})
 			}
 		}
-		console.log(this.arrayComments[0].repliesArr)
+		console.log(this.arrayComments)
 
 		favoriteButton.addEventListener('click', () => {
 			const commentId = commentElement.getAttribute('by-comment-id')
