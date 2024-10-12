@@ -25,7 +25,7 @@ export function makeUserInfo() {
 }
 
 function getUserName(): string {
-	const isNeedUserName = confirm('Вы хотите ввести никнейм или по дефолту?')
+	const isNeedUserName = confirm('Задать свой никнейм? Если нет то по дефолту.')
 	let userName: string
 
 	if (isNeedUserName) {
@@ -34,7 +34,7 @@ function getUserName(): string {
 		userName = createDefaultUserName()
 	}
 
-	alert(`Спасибо. Ваше имя ${userName}`)
+	alert(`Хорошо. Ваше имя ${userName}`)
 	return userName
 }
 
@@ -73,7 +73,7 @@ function createDefaultUserName(): string {
 
 function getUserImg(): string {
 	const isNeedUserImg = confirm(
-		'Вы хотите задать свою аватарку или по дефолту?'
+		'Задать свою аватарку?. Если нет то по дефолту.'
 	)
 
 	if (isNeedUserImg) {
