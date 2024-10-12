@@ -345,7 +345,7 @@ export class CommentsContainer {
 		commentWrapperInfo.append(mainDiv)
 
 		const commentReplies = document.createElement('div')
-		commentReplies.classList.add('comment__replies-by-comment')
+		commentReplies.classList.add('comments__replies-by-comment')
 
 		commentElement.append(commentWrapperInfo)
 		commentElement.append(commentReplies)
@@ -354,12 +354,12 @@ export class CommentsContainer {
 			this.commentsListOfComments.prepend(commentElement)
 		} else {
 			let replyParentBlock = parentComment.querySelector(
-				'.comment__replies-by-comment'
+				'.comments__replies-by-comment'
 			)
 
 			if (!replyParentBlock) {
 				replyParentBlock = document.createElement('div')
-				replyParentBlock.classList.add('comment__replies-by-comment')
+				replyParentBlock.classList.add('comments__replies-by-comment')
 				parentComment.append(replyParentBlock)
 			}
 
