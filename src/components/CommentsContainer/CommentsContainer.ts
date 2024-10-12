@@ -2,6 +2,20 @@ import { createNewUser, makeUserInfo, switchUser } from '../../user/user'
 import './CommentsContainer.scss'
 
 const user = makeUserInfo()
+
+interface Comment {
+	text: string
+	isReply: boolean
+	isFavorite: boolean
+	parentCommentId: number | null | undefined
+	repliedToUserName: string | null | undefined
+	user: { userName: string; userImg: string }
+	rating: number
+	commentId: number
+	date: Date
+	repliesArr: Comment[]
+}
+
 export class CommentsContainer {
 	public commentsContainer: HTMLDivElement
 	public commentsActivities: HTMLDivElement
@@ -9,17 +23,7 @@ export class CommentsContainer {
 	public commentsListOfComments: HTMLDivElement
 	private commentInput: HTMLInputElement | null
 	private commentButton: HTMLInputElement | null
-	private arrayComments: {
-		text: string
-		isReply: boolean
-		parentCommentId?: number | null
-		repliedToUserName?: string | null
-		user: { userName: string; userImg: string }
-		rating?: number
-		commentId: number
-		date: Date | undefined
-		repliesArr: Array<HTMLElement> | null | undefined
-	}[]
+	private arrayComments: Comment[] = []
 	private commentCountSpan: HTMLSpanElement | null
 	private commentMainButton: HTMLElement | null
 	private commentFavorite: HTMLElement | null
@@ -171,6 +175,7 @@ export class CommentsContainer {
 						commentValue,
 						user,
 						false,
+						false,
 						null,
 						null,
 						false,
@@ -190,6 +195,7 @@ export class CommentsContainer {
 		value: string,
 		userInfo: { userName: string; userImg: string },
 		isReply: boolean,
+		isFavorite: boolean,
 		parentComment?: HTMLDivElement | null,
 		repliedToUserName?: string | null,
 		isLocalStorage?: boolean,
@@ -273,6 +279,13 @@ export class CommentsContainer {
 
 		const favoriteButton = document.createElement('button')
 		favoriteButton.textContent = 'В избранное'
+		if (isFavorite) {
+			favoriteButton.textContent = 'В избранном'
+			favoriteButton.style.color = '#aa2222'
+		} else {
+			favoriteButton.textContent = 'В избранное'
+			favoriteButton.style.color = 'white'
+		}
 
 		const ratingDiv = document.createElement('div')
 		ratingDiv.classList.add('comment-activities__count')
@@ -290,30 +303,30 @@ export class CommentsContainer {
 			const currentCount = parseInt(ratingCount.textContent || '0')
 			const voteStatus = this.getVoteStatus(value)
 
-			if (voteStatus !== 'down') {
-				this.updateVoteStatus(value, 'down')
-				ratingCount.textContent = (currentCount - 1).toString()
-				const commentIndex = this.arrayComments.findIndex(
-					comment => comment.text === value
-				)
-				this.arrayComments[commentIndex].rating = currentCount - 1
-				this.saveCommentsToStorage()
-			}
+			// if (voteStatus !== 'down') {
+			this.updateVoteStatus(value, 'down')
+			ratingCount.textContent = (currentCount - 1).toString()
+			const commentIndex = this.arrayComments.findIndex(
+				comment => comment.text === value
+			)
+			this.arrayComments[commentIndex].rating = currentCount - 1
+			this.saveCommentsToStorage()
+			// }
 		})
 
 		increaseButton.addEventListener('click', () => {
 			const currentCount = parseInt(ratingCount.textContent || '0')
 			const voteStatus = this.getVoteStatus(value)
 
-			if (voteStatus !== 'up') {
-				this.updateVoteStatus(value, 'up')
-				ratingCount.textContent = (currentCount + 1).toString()
-				const commentIndex = this.arrayComments.findIndex(
-					comment => comment.text === value
-				)
-				this.arrayComments[commentIndex].rating = currentCount + 1
-				this.saveCommentsToStorage()
-			}
+			// if (voteStatus !== 'up') {
+			this.updateVoteStatus(value, 'up')
+			ratingCount.textContent = (currentCount + 1).toString()
+			const commentIndex = this.arrayComments.findIndex(
+				comment => comment.text === value
+			)
+			this.arrayComments[commentIndex].rating = currentCount + 1
+			this.saveCommentsToStorage()
+			// }
 		})
 
 		ratingDiv.append(decreaseButton)
@@ -360,8 +373,9 @@ export class CommentsContainer {
 			)
 			if (parentCommentIndex > -1) {
 				this.arrayComments[parentCommentIndex].repliesArr?.push({
-					text: value, //хм
+					text: value, //!не забыть исправить
 					isReply: isReply,
+					isFavorite: isFavorite,
 					parentCommentId: parentCommentId,
 					repliedToUserName: repliedToUserName,
 					user: userInfo,
@@ -372,11 +386,37 @@ export class CommentsContainer {
 				})
 			}
 		}
+		console.log(this.arrayComments[0].repliesArr)
+
+		favoriteButton.addEventListener('click', () => {
+			const commentId = commentElement.getAttribute('by-comment-id')
+			const commentIndex = this.arrayComments.findIndex(
+				comment => comment.commentId.toString() === commentId
+			)
+
+			const isFavorite = this.arrayComments[commentIndex].isFavorite
+			this.arrayComments[commentIndex].isFavorite = !isFavorite
+			console.log(this.arrayComments)
+			console.log(commentId, commentIndex, isFavorite, commentElement)
+			if (!isFavorite) {
+				favoriteButton.textContent = 'В избранном'
+				favoriteButton.style.color = '#aa2222'
+
+				this.addCommentToFavorite(commentElement)
+			} else {
+				favoriteButton.textContent = 'В избранное'
+				favoriteButton.style.color = 'white'
+				if (commentId) this.removeCommentFromFavorite(commentId)
+			}
+
+			this.saveCommentsToStorage()
+		})
 
 		if (!isLocalStorage) {
 			this.arrayComments.push({
 				text: value,
 				isReply: isReply,
+				isFavorite: isFavorite,
 				parentCommentId: parentComment
 					? Number(parentComment.getAttribute('by-comment-id'))
 					: null,
@@ -392,40 +432,6 @@ export class CommentsContainer {
 		console.log(this.arrayComments)
 
 		this.updateAmountOfComment()
-
-		favoriteButton.addEventListener('click', () => {
-			const commentHTMLElement = commentElement as HTMLElement
-
-			if (!this.commentsFavoriteContainer) {
-				return
-			}
-
-			const existingFavoriteComment =
-				this.commentsFavoriteContainer.querySelector(
-					`[by-comment-id="${commentHTMLElement.getAttribute(
-						'by-comment-id'
-					)}"]`
-				)
-
-			if (existingFavoriteComment) {
-				existingFavoriteComment.remove()
-				favoriteButton.textContent = 'В избранное'
-				favoriteButton.style.color = 'white'
-			} else {
-				favoriteButton.style.color = '#aa2222'
-				const favoriteCommentElement = commentHTMLElement.cloneNode(
-					true
-				) as HTMLElement
-				this.commentsFavoriteContainer.append(favoriteCommentElement)
-				favoriteButton.textContent = 'В избранном'
-			}
-
-			const emptyMessage = this.commentsFavoriteContainer.querySelector('h3')
-			if (emptyMessage && this.commentsFavoriteContainer.children.length > 1) {
-				emptyMessage.remove()
-			}
-		})
-
 		replyButton.addEventListener('click', () => {
 			let existingReplyForm = mainDiv.querySelector('#reply-form')
 
@@ -460,6 +466,7 @@ export class CommentsContainer {
 							replyValue,
 							userInfo,
 							true,
+							false,
 							commentElement,
 							repliedToUserName,
 							false,
@@ -471,7 +478,30 @@ export class CommentsContainer {
 			}
 		})
 	}
+	private addCommentToFavorite(commentElement: HTMLElement): void {
+		const favoriteCommentElement = commentElement?.cloneNode(true)
+		const favoriteContainer = this.commentsFavoriteContainer
 
+		if (favoriteContainer) {
+			const noFavoritesMessage = favoriteContainer.querySelector('h3')
+			if (noFavoritesMessage) noFavoritesMessage.remove()
+
+			favoriteContainer.append(favoriteCommentElement)
+		}
+	}
+
+	private removeCommentFromFavorite(commentId: string): void {
+		const favoriteCommentElement =
+			this.commentsFavoriteContainer?.querySelector(
+				`[by-comment-id="${commentId}"]`
+			)
+		favoriteCommentElement?.remove()
+		if (this.commentsFavoriteContainer?.children.length === 0) {
+			this.commentsFavoriteContainer.innerHTML = `
+				<h3 style='margin-top: 30px'>У вас пока нет избранных комментариев</h3>
+			`
+		}
+	}
 	private sortComments(criteria: string): void {
 		let sortedComments = [...this.arrayComments]
 
@@ -524,6 +554,7 @@ export class CommentsContainer {
 					comment.text,
 					comment.user,
 					false,
+					comment.isFavorite,
 					null,
 					null,
 					true,
@@ -538,9 +569,9 @@ export class CommentsContainer {
 					reply => reply.parentCommentId === comment.commentId
 				)
 
-				// if (replies.length > 0) {
-				// 	this.renderReplies(replies, parentCommentElement)
-				// }
+				if (replies.length > 0) {
+					this.renderReplies(replies, parentCommentElement)
+				}
 			}
 		})
 	}
@@ -573,6 +604,7 @@ export class CommentsContainer {
 		const commentsToSave = this.arrayComments.map(comment => ({
 			text: comment.text,
 			isReply: comment.isReply,
+			isFavorite: comment.isFavorite,
 			parentCommentId: comment.isReply ? comment.parentCommentId : null,
 			repliedToUserName: comment.isReply ? comment.repliedToUserName : null,
 			user: {
@@ -597,6 +629,7 @@ export class CommentsContainer {
 				reply.text,
 				reply.user,
 				true,
+				reply.isFavorite,
 				parentCommentElement,
 				reply.repliedToUserName,
 				true,
@@ -612,12 +645,25 @@ export class CommentsContainer {
 		this.arrayComments = []
 
 		if (savedComments) {
-			const parsedComments: Array<CommentRender> = JSON.parse(savedComments)
+			const parsedComments: Array<Comment> = JSON.parse(savedComments)
 
 			this.arrayComments = parsedComments.map(comment => ({
-				...comment,
+				text: comment.text,
+				isReply: comment.isReply,
+				isFavorite: comment.isFavorite,
+				parentCommentId:
+					comment.parentCommentId !== undefined
+						? comment.parentCommentId
+						: null,
+				repliedToUserName:
+					comment.repliedToUserName !== undefined
+						? comment.repliedToUserName
+						: null,
+				user: comment.user,
+				rating: comment.rating || 0,
+				commentId: comment.commentId,
 				date: comment.date ? new Date(comment.date) : new Date(),
-				repliesArr: comment.repliesArr || [],
+				repliesArr: comment.repliesArr || [], // Это должно быть массивом Comment
 			}))
 
 			this.arrayComments.forEach(comment => {
@@ -633,6 +679,7 @@ export class CommentsContainer {
 					comment.text,
 					comment.user,
 					comment.isReply,
+					comment.isFavorite,
 					parentCommentElement,
 					comment.repliedToUserName || null,
 					true,
@@ -640,6 +687,16 @@ export class CommentsContainer {
 					comment.commentId,
 					comment.date
 				)
+
+				if (comment.isFavorite) {
+					const commentElementClone: HTMLElement | null =
+						this.commentsListOfComments.querySelector(
+							`[by-comment-id="${comment.commentId}"]`
+						)
+					if (commentElementClone) {
+						this.addCommentToFavorite(commentElementClone)
+					}
+				}
 
 				if (comment.repliesArr && comment.repliesArr.length > 0) {
 					this.renderReplies(comment.repliesArr, commentElement)
@@ -651,30 +708,4 @@ export class CommentsContainer {
 	public getElement(): HTMLDivElement {
 		return this.commentsContainer
 	}
-}
-interface exampleUser {
-	userName: string
-	userImg: string
-}
-interface Comment {
-	text: string
-	isReply: boolean
-	parentCommentId?: number
-	repliedToUserName?: string | null
-	user: { userName: string; userImg: string }
-	rating: number
-	commentId: number
-	date?: string
-	repliesArr: Array<Comment>
-}
-interface CommentRender {
-	text: string
-	isReply: boolean
-	parentCommentId?: number | null
-	repliedToUserName?: string | null
-	user: { userName: string; userImg: string }
-	rating?: number
-	commentId: number
-	date: Date
-	repliesArr: HTMLElement[]
 }
